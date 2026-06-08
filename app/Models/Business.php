@@ -9,9 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Business extends Model
 {
+    public const PLANS = ['estrella', 'pro', 'destaca', 'emprende', 'lite'];
+
     protected $fillable = [
         'name', 'slug', 'description', 'address', 'phone', 'email',
-        'video_url', 'video_orientation', 'tags', 'active',
+        'video_url', 'video_orientation', 'tags', 'active', 'plan',
     ];
 
     protected $casts = [

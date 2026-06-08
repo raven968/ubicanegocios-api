@@ -44,6 +44,7 @@ class BusinessController extends Controller
             'video_orientation' => $data['video_orientation'] ?? 'horizontal',
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? true,
+            'plan' => $data['plan'] ?? null,
         ]);
 
         $this->syncRelations($business, $data);
@@ -72,6 +73,7 @@ class BusinessController extends Controller
             'video_orientation' => $data['video_orientation'] ?? $business->video_orientation,
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? $business->active,
+            'plan' => array_key_exists('plan', $data) ? $data['plan'] : $business->plan,
         ]);
 
         $this->syncRelations($business, $data);
@@ -99,6 +101,7 @@ class BusinessController extends Controller
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
             'active' => ['boolean'],
+            'plan' => ['nullable', 'in:'.implode(',', Business::PLANS)],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'subcategory_ids' => ['nullable', 'array'],

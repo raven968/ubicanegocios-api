@@ -21,6 +21,7 @@ class BusinessResource extends JsonResource
             'video_orientation' => $this->video_orientation ?? 'horizontal',
             'tags' => $this->tags ?? [],
             'active' => $this->active,
+            'plan' => $this->plan,
             'average_rating' => $this->average_rating,
             'reviews_count' => $this->reviews_count,
             'images' => BusinessImageResource::collection($this->whenLoaded('images')),

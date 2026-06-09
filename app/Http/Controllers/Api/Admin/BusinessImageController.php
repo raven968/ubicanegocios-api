@@ -25,7 +25,7 @@ class BusinessImageController extends Controller
         $created = collect();
 
         foreach ($request->file('images') as $file) {
-            $path = $file->store("businesses/{$business->id}", 'public');
+            $path = $file->store("businesses/{$business->id}");
             $created->push($business->images()->create([
                 'path' => $path,
                 'order' => ++$start,
@@ -54,7 +54,7 @@ class BusinessImageController extends Controller
 
     public function destroy(BusinessImage $image)
     {
-        Storage::disk('public')->delete($image->path);
+        Storage::delete($image->path);
         $image->delete();
 
         return response()->noContent();

@@ -13,6 +13,7 @@ class Business extends Model
 
     protected $fillable = [
         'name', 'slug', 'description', 'address', 'phone', 'email',
+        'facebook', 'instagram', 'tiktok', 'pinterest', 'website',
         'tags', 'active', 'plan',
     ];
 

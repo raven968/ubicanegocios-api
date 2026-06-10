@@ -47,7 +47,7 @@ class BusinessController extends Controller
         $business = Business::query()
             ->where('slug', $slug)
             ->where('active', true)
-            ->with(['images', 'categories', 'subcategories', 'reviews'])
+            ->with(['images', 'videos', 'categories', 'subcategories', 'reviews'])
             ->firstOrFail();
 
         return new BusinessResource($business);

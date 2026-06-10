@@ -20,7 +20,10 @@ class BusinessSeeder extends Seeder
                 'address' => 'Av. Juárez 123, Centro, Guadalajara, Jalisco',
                 'phone' => '+52 33 1234 5678',
                 'email' => 'hola@tacoselgordo.mx',
-                'video_url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+                'videos' => [
+                    ['url' => 'https://www.youtube.com/watch?v=dQw4w9WgXcQ', 'orientation' => 'horizontal'],
+                    ['url' => 'https://www.youtube.com/shorts/aqz-KE-bpKQ', 'orientation' => 'vertical'],
+                ],
                 'tags' => ['tacos', 'al pastor', 'comida rápida', 'cena'],
                 'category_slugs' => ['alimentos-y-bebidas'],
                 'reviews' => [
@@ -34,7 +37,7 @@ class BusinessSeeder extends Seeder
                 'address' => 'Calle Hidalgo 45, Col. Americana, Guadalajara, Jalisco',
                 'phone' => '+52 33 9876 5432',
                 'email' => 'contacto@plomeriaramirez.mx',
-                'video_url' => null,
+                'videos' => [],
                 'tags' => ['plomería', 'fugas', 'destapes', 'boilers', 'emergencias'],
                 'category_slugs' => ['oficios-y-reparaciones'],
                 'reviews' => [
@@ -49,8 +52,9 @@ class BusinessSeeder extends Seeder
                 'address' => 'Av. Vallarta 1500, Col. Vallarta Norte, Guadalajara, Jalisco',
                 'phone' => '+52 33 5555 0000',
                 'email' => 'citas@patitasfelices.mx',
-                'video_url' => 'https://www.youtube.com/shorts/aqz-KE-bpKQ',
-                'video_orientation' => 'vertical',
+                'videos' => [
+                    ['url' => 'https://www.youtube.com/shorts/aqz-KE-bpKQ', 'orientation' => 'vertical'],
+                ],
                 'tags' => ['veterinaria', 'mascotas', 'perros', 'gatos', 'estética', 'vacunas'],
                 'category_slugs' => ['mascotas', 'salud-y-bienestar'],
                 'reviews' => [
@@ -68,8 +72,6 @@ class BusinessSeeder extends Seeder
                     'address' => $data['address'] ?? null,
                     'phone' => $data['phone'] ?? null,
                     'email' => $data['email'] ?? null,
-                    'video_url' => $data['video_url'],
-                    'video_orientation' => $data['video_orientation'] ?? 'horizontal',
                     'tags' => $data['tags'],
                     'active' => true,
                 ],
@@ -80,6 +82,12 @@ class BusinessSeeder extends Seeder
                 ->filter()
                 ->all();
             $business->categories()->sync($categoryIds);
+
+            // Refresh videos so re-running the seeder is idempotent.
+            $business->videos()->delete();
+            foreach (array_values($data['videos'] ?? []) as $order => $video) {
+                $business->videos()->create($video + ['order' => $order]);
+            }
 
             // Refresh reviews so re-running the seeder is idempotent.
             $business->reviews()->delete();

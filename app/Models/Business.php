@@ -9,11 +9,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Business extends Model
 {
-    public const PLANS = ['estrella', 'pro', 'destaca', 'emprende', 'lite'];
+    public const PLANS = ['fundador', 'estrella', 'pro', 'destaca', 'emprende', 'lite'];
 
     protected $fillable = [
         'name', 'slug', 'description', 'address', 'phone', 'email',
-        'video_url', 'video_orientation', 'tags', 'active', 'plan',
+        'tags', 'active', 'plan',
     ];
 
     protected $casts = [
@@ -26,6 +26,11 @@ class Business extends Model
     public function images(): HasMany
     {
         return $this->hasMany(BusinessImage::class)->orderBy('order');
+    }
+
+    public function videos(): HasMany
+    {
+        return $this->hasMany(BusinessVideo::class)->orderBy('order');
     }
 
     public function reviews(): HasMany

@@ -40,8 +40,6 @@ class BusinessController extends Controller
             'address' => $data['address'] ?? null,
             'phone' => $data['phone'] ?? null,
             'email' => $data['email'] ?? null,
-            'video_url' => $data['video_url'] ?? null,
-            'video_orientation' => $data['video_orientation'] ?? 'horizontal',
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? true,
             'plan' => $data['plan'] ?? null,
@@ -49,13 +47,13 @@ class BusinessController extends Controller
 
         $this->syncRelations($business, $data);
 
-        return new BusinessResource($business->load(['images', 'categories', 'subcategories']));
+        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories']));
     }
 
     public function show(Business $business)
     {
         return new BusinessResource(
-            $business->load(['images', 'categories', 'subcategories', 'reviews'])
+            $business->load(['images', 'videos', 'categories', 'subcategories', 'reviews'])
         );
     }
 
@@ -69,8 +67,6 @@ class BusinessController extends Controller
             'address' => $data['address'] ?? null,
             'phone' => $data['phone'] ?? null,
             'email' => $data['email'] ?? null,
-            'video_url' => $data['video_url'] ?? null,
-            'video_orientation' => $data['video_orientation'] ?? $business->video_orientation,
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? $business->active,
             'plan' => array_key_exists('plan', $data) ? $data['plan'] : $business->plan,
@@ -78,7 +74,7 @@ class BusinessController extends Controller
 
         $this->syncRelations($business, $data);
 
-        return new BusinessResource($business->load(['images', 'categories', 'subcategories']));
+        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories']));
     }
 
     public function destroy(Business $business)
@@ -96,8 +92,9 @@ class BusinessController extends Controller
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],
             'email' => ['nullable', 'email', 'max:120'],
-            'video_url' => ['nullable', 'url', 'max:255'],
-            'video_orientation' => ['nullable', 'in:horizontal,vertical'],
+            'videos' => ['nullable', 'array'],
+            'videos.*.url' => ['required', 'url', 'max:255'],
+            'videos.*.orientation' => ['nullable', 'in:horizontal,vertical'],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
             'active' => ['boolean'],
@@ -116,6 +113,16 @@ class BusinessController extends Controller
         }
         if (array_key_exists('subcategory_ids', $data)) {
             $business->subcategories()->sync($data['subcategory_ids'] ?? []);
+        }
+        if (array_key_exists('videos', $data)) {
+            $business->videos()->delete();
+            foreach (array_values($data['videos'] ?? []) as $order => $video) {
+                $business->videos()->create([
+                    'url' => $video['url'],
+                    'orientation' => $video['orientation'] ?? 'horizontal',
+                    'order' => $order,
+                ]);
+            }
         }
     }
 

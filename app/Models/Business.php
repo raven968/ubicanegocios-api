@@ -12,7 +12,7 @@ class Business extends Model
     public const PLANS = ['fundador', 'estrella', 'pro', 'destaca', 'emprende', 'lite'];
 
     protected $fillable = [
-        'name', 'slug', 'description', 'address', 'phone', 'email',
+        'name', 'slug', 'description', 'address', 'phone', 'phone2', 'email',
         'facebook', 'instagram', 'tiktok', 'pinterest', 'website',
         'tags', 'active', 'plan',
     ];

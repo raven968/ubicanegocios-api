@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -32,7 +33,7 @@ class AuthController extends Controller
 
         return response()->json([
             'token' => $token,
-            'user' => $this->userPayload($user),
+            'user' => (new UserResource($user))->withAbilities(),
         ]);
     }
 
@@ -51,17 +52,8 @@ class AuthController extends Controller
      */
     public function me(Request $request)
     {
-        return response()->json($this->userPayload($request->user()));
-    }
-
-    private function userPayload(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'roles' => $user->getRoles(),
-            'abilities' => $user->getAbilities()->pluck('name'),
-        ];
+        return response()->json(
+            (new UserResource($request->user()))->withAbilities()->resolve()
+        );
     }
 }

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -12,10 +13,9 @@ class UserController extends Controller
 {
     public function index()
     {
-        return User::query()
-            ->orderBy('name')
-            ->get()
-            ->map(fn (User $u) => $this->payload($u));
+        // ->resolve() keeps the response a bare array (no "data" wrapper),
+        // matching what the admin front consumes.
+        return UserResource::collection(User::orderBy('name')->get())->resolve();
     }
 
     public function store(Request $request)
@@ -38,7 +38,7 @@ class UserController extends Controller
             $user->assign($data['roles']);
         }
 
-        return response()->json($this->payload($user), 201);
+        return response()->json((new UserResource($user))->resolve(), 201);
     }
 
     public function update(Request $request, User $user)
@@ -56,7 +56,7 @@ class UserController extends Controller
         }
         $user->save();
 
-        return response()->json($this->payload($user));
+        return response()->json((new UserResource($user))->resolve());
     }
 
     public function destroy(Request $request, User $user)
@@ -86,16 +86,6 @@ class UserController extends Controller
             $user->assign($data['roles']);
         }
 
-        return response()->json($this->payload($user->fresh()));
-    }
-
-    private function payload(User $user): array
-    {
-        return [
-            'id' => $user->id,
-            'name' => $user->name,
-            'email' => $user->email,
-            'roles' => $user->getRoles(),
-        ];
+        return response()->json((new UserResource($user->fresh()))->resolve());
     }
 }

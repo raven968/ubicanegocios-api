@@ -13,6 +13,8 @@ class BusinessResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'slug' => $this->slug,
+            // Interno: solo viaja por las rutas de admin, nunca al sitio público.
+            'folio' => $this->when($request->routeIs('admin.*'), $this->folio),
             'description' => $this->description,
             'address' => $this->address,
             'phone' => $this->phone,

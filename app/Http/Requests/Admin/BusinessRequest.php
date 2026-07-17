@@ -4,6 +4,7 @@ namespace App\Http\Requests\Admin;
 
 use App\Models\Business;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class BusinessRequest extends FormRequest
 {
@@ -19,6 +20,10 @@ class BusinessRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:150'],
+            'folio' => [
+                'nullable', 'string', 'max:30', 'regex:/^[A-Za-z0-9-]+$/',
+                Rule::unique('businesses', 'folio')->ignore($this->route('business')),
+            ],
             'description' => ['nullable', 'string'],
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],
@@ -41,6 +46,17 @@ class BusinessRequest extends FormRequest
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'subcategory_ids' => ['nullable', 'array'],
             'subcategory_ids.*' => ['integer', 'exists:subcategories,id'],
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public function messages(): array
+    {
+        return [
+            'folio.regex' => 'El folio solo puede contener letras, números y guiones.',
+            'folio.unique' => 'Ese folio ya está asignado a otro negocio.',
         ];
     }
 }

@@ -24,7 +24,10 @@ class BusinessController extends Controller
             ->with(['images', 'categories'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
-                $q->where('name', 'ilike', $term);
+                $q->where(function ($q) use ($term) {
+                    $q->where('name', 'ilike', $term)
+                        ->orWhere('folio', 'ilike', $term);
+                });
             })
             ->when($request->filled('active'), fn ($q) => $q->where('active', $request->boolean('active')))
             ->latest()

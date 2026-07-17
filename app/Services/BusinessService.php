@@ -17,6 +17,7 @@ class BusinessService
         $business = Business::create([
             'name' => $data['name'],
             'slug' => $this->uniqueSlug($data['name']),
+            'folio' => $data['folio'] ?? null,
             'description' => $data['description'] ?? null,
             'address' => $data['address'] ?? null,
             'phone' => $data['phone'] ?? null,
@@ -47,6 +48,7 @@ class BusinessService
     {
         $business->update([
             'name' => $data['name'],
+            'folio' => array_key_exists('folio', $data) ? $data['folio'] : $business->folio,
             'description' => $data['description'] ?? null,
             'address' => $data['address'] ?? null,
             'phone' => $data['phone'] ?? null,

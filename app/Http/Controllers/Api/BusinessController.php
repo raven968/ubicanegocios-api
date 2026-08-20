@@ -11,18 +11,22 @@ class BusinessController extends Controller
 {
     /**
      * Public listing of active businesses with optional filters:
-     * ?category=slug  ?subcategory=slug  ?search=term
+     * ?category=slug  ?subcategory=slug  ?zone=slug  ?search=term
+     * ?sort=plan ordena por plan (fundador → lite) antes que por fecha.
      */
     public function index(Request $request)
     {
         $businesses = Business::query()
             ->where('active', true)
-            ->with(['images', 'categories'])
+            ->with(['images', 'categories', 'zones'])
             ->when($request->filled('category'), function ($q) use ($request) {
                 $q->whereHas('categories', fn ($c) => $c->where('slug', $request->string('category')));
             })
             ->when($request->filled('subcategory'), function ($q) use ($request) {
                 $q->whereHas('subcategories', fn ($s) => $s->where('slug', $request->string('subcategory')));
+            })
+            ->when($request->filled('zone'), function ($q) use ($request) {
+                $q->whereHas('zones', fn ($z) => $z->where('slug', $request->string('zone')));
             })
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
@@ -32,6 +36,7 @@ class BusinessController extends Controller
                         ->orWhereRaw('tags::text ilike ?', [$term]);
                 });
             })
+            ->when($request->query('sort') === 'plan', fn ($q) => $q->orderByPlan())
             ->latest()
             ->paginate(12)
             ->withQueryString();
@@ -47,7 +52,7 @@ class BusinessController extends Controller
         $business = Business::query()
             ->where('slug', $slug)
             ->where('active', true)
-            ->with(['images', 'videos', 'categories', 'subcategories', 'reviews'])
+            ->with(['images', 'videos', 'categories', 'subcategories', 'zones', 'reviews'])
             ->firstOrFail();
 
         return new BusinessResource($business);

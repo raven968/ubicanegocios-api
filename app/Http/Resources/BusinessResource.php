@@ -35,6 +35,7 @@ class BusinessResource extends JsonResource
             'videos' => BusinessVideoResource::collection($this->whenLoaded('videos')),
             'categories' => CategoryResource::collection($this->whenLoaded('categories')),
             'subcategories' => SubcategoryResource::collection($this->whenLoaded('subcategories')),
+            'zones' => ZoneResource::collection($this->whenLoaded('zones')),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
             'created_at' => $this->created_at,
         ];

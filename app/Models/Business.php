@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -47,6 +48,27 @@ class Business extends Model
     public function subcategories(): BelongsToMany
     {
         return $this->belongsToMany(Subcategory::class);
+    }
+
+    public function zones(): BelongsToMany
+    {
+        return $this->belongsToMany(Zone::class);
+    }
+
+    /**
+     * Ranks businesses by plan following the order of self::PLANS
+     * (fundador → lite). Los que no tienen plan quedan al final.
+     */
+    public function scopeOrderByPlan(Builder $query): Builder
+    {
+        $cases = collect(self::PLANS)
+            ->map(fn (string $plan, int $rank) => "when ? then {$rank}")
+            ->implode(' ');
+
+        return $query->orderByRaw(
+            "case plan {$cases} else ".count(self::PLANS).' end',
+            self::PLANS,
+        );
     }
 
     protected function averageRating(): Attribute

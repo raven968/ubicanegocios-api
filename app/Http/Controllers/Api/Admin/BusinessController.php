@@ -21,7 +21,7 @@ class BusinessController extends Controller
     public function index(Request $request)
     {
         $businesses = Business::query()
-            ->with(['images', 'categories'])
+            ->with(['images', 'categories', 'zones'])
             ->when($request->filled('search'), function ($q) use ($request) {
                 $term = '%'.$request->string('search').'%';
                 $q->where(function ($q) use ($term) {
@@ -41,13 +41,13 @@ class BusinessController extends Controller
     {
         $business = $this->businesses->create($request->validated());
 
-        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories']));
+        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories', 'zones']));
     }
 
     public function show(Business $business)
     {
         return new BusinessResource(
-            $business->load(['images', 'videos', 'categories', 'subcategories', 'reviews'])
+            $business->load(['images', 'videos', 'categories', 'subcategories', 'zones', 'reviews'])
         );
     }
 
@@ -55,7 +55,7 @@ class BusinessController extends Controller
     {
         $business = $this->businesses->update($business, $request->validated());
 
-        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories']));
+        return new BusinessResource($business->load(['images', 'videos', 'categories', 'subcategories', 'zones']));
     }
 
     public function destroy(Business $business)

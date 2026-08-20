@@ -6,10 +6,12 @@ use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\SubcategoryController;
 use App\Http\Controllers\Api\Admin\UserController;
+use App\Http\Controllers\Api\Admin\ZoneController as AdminZoneController;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\BusinessController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\ReviewController;
+use App\Http\Controllers\Api\ZoneController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->group(function () {
@@ -17,6 +19,7 @@ Route::prefix('v1')->group(function () {
      | Public endpoints
      */
     Route::get('categories', [CategoryController::class, 'index']);
+    Route::get('zones', [ZoneController::class, 'index']);
     Route::get('businesses', [BusinessController::class, 'index']);
     Route::get('businesses/{slug}', [BusinessController::class, 'show']);
     Route::get('businesses/{slug}/reviews', [ReviewController::class, 'index']);
@@ -42,6 +45,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('can:manage-categories')->group(function () {
             Route::apiResource('categories', AdminCategoryController::class)->except(['show']);
             Route::apiResource('subcategories', SubcategoryController::class)->except(['show']);
+            Route::apiResource('zones', AdminZoneController::class)->except(['index', 'show']);
         });
 
         Route::middleware('can:moderate-reviews')->group(function () {

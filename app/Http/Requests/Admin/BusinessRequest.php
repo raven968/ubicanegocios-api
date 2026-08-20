@@ -46,6 +46,8 @@ class BusinessRequest extends FormRequest
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'subcategory_ids' => ['nullable', 'array'],
             'subcategory_ids.*' => ['integer', 'exists:subcategories,id'],
+            'zone_ids' => ['nullable', 'array'],
+            'zone_ids.*' => ['integer', 'exists:zones,id'],
         ];
     }
 

@@ -98,6 +98,9 @@ class BusinessService
         if (array_key_exists('subcategory_ids', $data)) {
             $business->subcategories()->sync($data['subcategory_ids'] ?? []);
         }
+        if (array_key_exists('zone_ids', $data)) {
+            $business->zones()->sync($data['zone_ids'] ?? []);
+        }
         if (array_key_exists('videos', $data)) {
             $business->videos()->delete();
             foreach (array_values($data['videos'] ?? []) as $order => $video) {

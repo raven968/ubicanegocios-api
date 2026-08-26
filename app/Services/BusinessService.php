@@ -3,10 +3,36 @@
 namespace App\Services;
 
 use App\Models\Business;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class BusinessService
 {
+    /**
+     * Listado del admin filtrado por texto y estado. Devuelve el query para que
+     * el controlador decida si pagina o exporta.
+     *
+     * @param  array<string, mixed>  $filters
+     */
+    public function query(array $filters): Builder
+    {
+        return Business::query()
+            ->with(['images', 'categories', 'zones'])
+            ->when(! empty($filters['search']), function ($q) use ($filters) {
+                $term = '%'.$filters['search'].'%';
+                $q->where(function ($q) use ($term) {
+                    $q->where('name', 'ilike', $term)
+                        ->orWhere('folio', 'ilike', $term);
+                });
+            })
+            ->when(
+                isset($filters['active']) && $filters['active'] !== '',
+                fn ($q) => $q->where('active', filter_var($filters['active'], FILTER_VALIDATE_BOOL)),
+            )
+            ->latest();
+    }
+
     /**
      * Create a business from validated data, including its relations.
      *
@@ -32,6 +58,9 @@ class BusinessService
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? true,
             'plan' => $data['plan'] ?? null,
+            'joined_at' => $data['joined_at'] ?? null,
+            'contact_name' => $data['contact_name'] ?? null,
+            'payment_day' => $data['payment_day'] ?? null,
         ]);
 
         $this->syncRelations($business, $data);
@@ -63,11 +92,71 @@ class BusinessService
             'tags' => $data['tags'] ?? [],
             'active' => $data['active'] ?? $business->active,
             'plan' => array_key_exists('plan', $data) ? $data['plan'] : $business->plan,
+            'joined_at' => $data['joined_at'] ?? null,
+            'contact_name' => $data['contact_name'] ?? null,
+            'payment_day' => $data['payment_day'] ?? null,
         ]);
 
         $this->syncRelations($business, $data);
 
         return $business;
+    }
+
+    /**
+     * Filas planas listas para el CSV del listado.
+     *
+     * @param  array<string, mixed>  $filters
+     * @return Collection<int, array<int, string>>
+     */
+    public function exportRows(array $filters): Collection
+    {
+        return $this->query($filters)
+            ->with(['subcategories', 'reviews'])
+            ->get()
+            ->map(fn (Business $b) => [
+                (string) $b->folio,
+                $b->name,
+                $b->active ? 'Activo' : 'Inactivo',
+                (string) $b->plan,
+                $b->categories->pluck('name')->implode(', '),
+                $b->subcategories->pluck('name')->implode(', '),
+                $b->zones->pluck('name')->implode(', '),
+                (string) $b->phone,
+                (string) $b->phone2,
+                $this->whatsappNumber($b),
+                (string) $b->email,
+                (string) $b->address,
+                $b->joined_at?->toDateString() ?? '',
+                (string) $b->contact_name,
+                (string) $b->payment_day,
+                (string) $b->reviews->count(),
+                $b->reviews->isNotEmpty() ? (string) round($b->reviews->avg('rating'), 1) : '',
+                $b->created_at?->toDateString() ?? '',
+            ]);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function exportHeadings(): array
+    {
+        return [
+            'Folio', 'Nombre', 'Estado', 'Plan', 'Categorías', 'Subcategorías', 'Zonas',
+            'Teléfono', 'Teléfono 2', 'WhatsApp', 'Correo', 'Dirección',
+            'Fecha de ingreso', 'Encargado', 'Día de pago', 'Reseñas', 'Calificación', 'Alta',
+        ];
+    }
+
+    /**
+     * El número marcado como WhatsApp, ya resuelto a su valor.
+     */
+    private function whatsappNumber(Business $business): string
+    {
+        return match ($business->whatsapp_phone) {
+            'phone' => (string) $business->phone,
+            'phone2' => (string) $business->phone2,
+            default => '',
+        };
     }
 
     /**

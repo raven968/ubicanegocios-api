@@ -11,30 +11,42 @@ use Illuminate\Http\Request;
 
 class BusinessController extends Controller
 {
-    public function __construct(private readonly BusinessService $businesses)
-    {
-    }
+    public function __construct(private readonly BusinessService $businesses) {}
 
     /**
-     * List all businesses (active and inactive) with optional search.
+     * List all businesses with optional search and filter by state.
      */
     public function index(Request $request)
     {
-        $businesses = Business::query()
-            ->with(['images', 'categories', 'zones'])
-            ->when($request->filled('search'), function ($q) use ($request) {
-                $term = '%'.$request->string('search').'%';
-                $q->where(function ($q) use ($term) {
-                    $q->where('name', 'ilike', $term)
-                        ->orWhere('folio', 'ilike', $term);
-                });
-            })
-            ->when($request->filled('active'), fn ($q) => $q->where('active', $request->boolean('active')))
-            ->latest()
+        $businesses = $this->businesses
+            ->query($request->only(['search', 'active']))
             ->paginate(15)
             ->withQueryString();
 
         return BusinessResource::collection($businesses);
+    }
+
+    /**
+     * Descarga del listado filtrado en CSV (abre directo en Excel).
+     */
+    public function export(Request $request)
+    {
+        $filters = $request->only(['search', 'active']);
+        $rows = $this->businesses->exportRows($filters);
+        $headings = $this->businesses->exportHeadings();
+
+        return response()->streamDownload(function () use ($rows, $headings) {
+            $out = fopen('php://output', 'w');
+            // BOM para que Excel respete los acentos.
+            fwrite($out, "\xEF\xBB\xBF");
+            fputcsv($out, $headings);
+            foreach ($rows as $row) {
+                fputcsv($out, $row);
+            }
+            fclose($out);
+        }, 'negocios_'.now()->toDateString().'.csv', [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+        ]);
     }
 
     public function store(BusinessRequest $request)

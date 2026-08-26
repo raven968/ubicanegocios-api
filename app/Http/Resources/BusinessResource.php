@@ -29,6 +29,12 @@ class BusinessResource extends JsonResource
             'tags' => $this->tags ?? [],
             'active' => $this->active,
             'plan' => $this->plan,
+            // Datos de cobranza: igual que el folio, solo viajan por las rutas de admin.
+            $this->mergeWhen($request->routeIs('admin.*'), fn () => [
+                'joined_at' => $this->joined_at?->toDateString(),
+                'contact_name' => $this->contact_name,
+                'payment_day' => $this->payment_day,
+            ]),
             'average_rating' => $this->average_rating,
             'reviews_count' => $this->reviews_count,
             'images' => BusinessImageResource::collection($this->whenLoaded('images')),

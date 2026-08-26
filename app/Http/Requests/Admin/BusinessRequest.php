@@ -42,6 +42,9 @@ class BusinessRequest extends FormRequest
             'tags.*' => ['string', 'max:50'],
             'active' => ['boolean'],
             'plan' => ['nullable', 'in:'.implode(',', Business::PLANS)],
+            'joined_at' => ['nullable', 'date'],
+            'contact_name' => ['nullable', 'string', 'max:150'],
+            'payment_day' => ['nullable', 'integer', 'between:1,31'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'subcategory_ids' => ['nullable', 'array'],
@@ -59,6 +62,8 @@ class BusinessRequest extends FormRequest
         return [
             'folio.regex' => 'El folio solo puede contener letras, números y guiones.',
             'folio.unique' => 'Ese folio ya está asignado a otro negocio.',
+            'payment_day.between' => 'El día de pago debe ser un número del 1 al 31.',
+            'payment_day.integer' => 'El día de pago debe ser un número del 1 al 31.',
         ];
     }
 }

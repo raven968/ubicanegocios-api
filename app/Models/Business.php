@@ -16,11 +16,14 @@ class Business extends Model
         'name', 'slug', 'folio', 'description', 'address', 'phone', 'phone2', 'whatsapp_phone', 'email',
         'facebook', 'instagram', 'tiktok', 'pinterest', 'website',
         'tags', 'active', 'plan',
+        'joined_at', 'contact_name', 'payment_day',
     ];
 
     protected $casts = [
         'tags' => 'array',
         'active' => 'boolean',
+        'joined_at' => 'date',
+        'payment_day' => 'integer',
     ];
 
     protected $appends = ['average_rating', 'reviews_count'];
@@ -53,6 +56,11 @@ class Business extends Model
     public function zones(): BelongsToMany
     {
         return $this->belongsToMany(Zone::class);
+    }
+
+    public function cashMovements(): HasMany
+    {
+        return $this->hasMany(CashMovement::class)->latest('occurred_at');
     }
 
     /**

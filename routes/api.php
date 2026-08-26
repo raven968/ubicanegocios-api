@@ -2,6 +2,8 @@
 
 use App\Http\Controllers\Api\Admin\BusinessController as AdminBusinessController;
 use App\Http\Controllers\Api\Admin\BusinessImageController;
+use App\Http\Controllers\Api\Admin\CashMovementController;
+use App\Http\Controllers\Api\Admin\CashReportController;
 use App\Http\Controllers\Api\Admin\CategoryController as AdminCategoryController;
 use App\Http\Controllers\Api\Admin\ReviewController as AdminReviewController;
 use App\Http\Controllers\Api\Admin\SubcategoryController;
@@ -36,6 +38,8 @@ Route::prefix('v1')->group(function () {
         Route::get('me', [AuthController::class, 'me']);
 
         Route::middleware('can:manage-businesses')->group(function () {
+            // Antes del apiResource: si no, businesses/{business} se comería 'export'.
+            Route::get('businesses/export', [AdminBusinessController::class, 'export']);
             Route::apiResource('businesses', AdminBusinessController::class);
             Route::post('businesses/{business}/images', [BusinessImageController::class, 'store']);
             Route::put('businesses/{business}/images/reorder', [BusinessImageController::class, 'reorder']);
@@ -46,6 +50,13 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('categories', AdminCategoryController::class)->except(['show']);
             Route::apiResource('subcategories', SubcategoryController::class)->except(['show']);
             Route::apiResource('zones', AdminZoneController::class)->except(['index', 'show']);
+        });
+
+        Route::middleware('can:manage-cash')->prefix('cash')->group(function () {
+            Route::get('due', [CashReportController::class, 'due']);
+            Route::get('summary', [CashReportController::class, 'summary']);
+            Route::get('export', [CashReportController::class, 'export']);
+            Route::apiResource('movements', CashMovementController::class)->except(['show']);
         });
 
         Route::middleware('can:moderate-reviews')->group(function () {

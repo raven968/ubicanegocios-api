@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\MovementSource;
+use App\Enums\MovementType;
 use App\Models\Business;
 use App\Models\CashMovement;
 use Illuminate\Database\Eloquent\Builder;
@@ -62,11 +64,16 @@ class CashService
             ->when(! empty($filters['business_id']), fn ($q) => $q->where('business_id', $filters['business_id']))
             ->when(! empty($filters['from']), fn ($q) => $q->whereDate('occurred_at', '>=', $filters['from']))
             ->when(! empty($filters['to']), fn ($q) => $q->whereDate('occurred_at', '<=', $filters['to']))
+            // whereLike y no 'ilike': el operador es exclusivo de Postgres y
+            // dejaba esta búsqueda fuera del alcance de los tests, que corren
+            // en SQLite. whereLike es insensible a mayúsculas en ambos.
             ->when(! empty($filters['search']), function ($q) use ($filters) {
                 $term = '%'.$filters['search'].'%';
                 $q->where(function ($q) use ($term) {
-                    $q->where('concept', 'ilike', $term)
-                        ->orWhereHas('business', fn ($b) => $b->where('name', 'ilike', $term));
+                    $q->whereLike('concept', $term)
+                        ->orWhereHas('business', fn ($b) => $b
+                            ->whereLike('name', $term)
+                            ->orWhereLike('folio', $term));
                 });
             })
             ->orderByDesc('occurred_at')
@@ -93,8 +100,30 @@ class CashService
     }
 
     /**
+     * Saca al negocio de la hoja de cobro borrando la próxima fecha de cobro
+     * de su última cuota. No toca el historial: el pago sigue registrado, y el
+     * cliente vuelve a la hoja en cuanto se le capture un cobro con fecha.
+     */
+    public function dismissCharge(Business $business): bool
+    {
+        $movement = CashMovement::query()
+            ->latestFeePerBusiness()
+            ->where('business_id', $business->id)
+            ->first();
+
+        if (! $movement) {
+            return false;
+        }
+
+        $movement->update(['next_charge_date' => null]);
+
+        return true;
+    }
+
+    /**
      * Clientes a los que toca cobrar en la fecha dada, incluyendo los que ya
-     * se pasaron de fecha y siguen sin pago nuevo.
+     * se pasaron de fecha y siguen sin pago nuevo. Los marcados como exentos
+     * de pago quedan fuera.
      *
      * @return Collection<int, array<string, mixed>>
      */
@@ -104,6 +133,8 @@ class CashService
             ->latestFeePerBusiness()
             ->whereNotNull('next_charge_date')
             ->whereDate('next_charge_date', '<=', $date->toDateString())
+            // Los exentos no se persiguen: por acuerdo no pagan.
+            ->whereHas('business', fn ($b) => $b->where('payment_exempt', false))
             ->with('business')
             ->orderBy('next_charge_date')
             ->get()
@@ -136,8 +167,8 @@ class CashService
         $filters = ['from' => $from, 'to' => $to];
         $totals = $this->totals($filters);
 
-        $incomeByMonth = $this->sumByMonth($from, $to, CashMovement::TYPE_INCOME);
-        $expenseByMonth = $this->sumByMonth($from, $to, CashMovement::TYPE_EXPENSE);
+        $incomeByMonth = $this->sumByMonth($from, $to, MovementType::Income);
+        $expenseByMonth = $this->sumByMonth($from, $to, MovementType::Expense);
 
         $months = collect($incomeByMonth->keys()->merge($expenseByMonth->keys())->unique())
             ->sort()
@@ -158,9 +189,9 @@ class CashService
             'count' => $totals['count'],
             'income_by_source' => [
                 'fee' => round((float) CashMovement::query()->income()->between($from, $to)
-                    ->where('source', CashMovement::SOURCE_FEE)->sum('total'), 2),
+                    ->where('source', MovementSource::Fee)->sum('total'), 2),
                 'manual' => round((float) CashMovement::query()->income()->between($from, $to)
-                    ->where('source', CashMovement::SOURCE_MANUAL)->sum('total'), 2),
+                    ->where('source', MovementSource::Manual)->sum('total'), 2),
             ],
             'months' => $months,
             'top_clients' => $this->topClients($from, $to),
@@ -181,8 +212,8 @@ class CashService
             ->get()
             ->map(fn (CashMovement $m) => [
                 $m->occurred_at?->toDateString() ?? '',
-                $m->type === CashMovement::TYPE_INCOME ? 'Entrada' : 'Salida',
-                $m->source === CashMovement::SOURCE_FEE ? 'Cuota' : 'Manual',
+                $m->type->label(),
+                $m->source->label(),
                 $m->business?->name ?? '',
                 $m->business?->folio ?? '',
                 $m->concept,
@@ -235,7 +266,7 @@ class CashService
     /**
      * @return Collection<string, float>
      */
-    private function sumByMonth(string $from, string $to, string $type): Collection
+    private function sumByMonth(string $from, string $to, MovementType $type): Collection
     {
         return CashMovement::query()
             ->where('type', $type)

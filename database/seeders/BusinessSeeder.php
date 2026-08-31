@@ -33,7 +33,7 @@ class BusinessSeeder extends Seeder
             ],
             [
                 'name' => 'Plomería Express Ramírez',
-                'description' => "Servicio de plomería a domicilio: fugas, destapes, instalación de boilers y reparación de tuberías. Atendemos 24/7 emergencias.",
+                'description' => 'Servicio de plomería a domicilio: fugas, destapes, instalación de boilers y reparación de tuberías. Atendemos 24/7 emergencias.',
                 'address' => 'Calle Hidalgo 45, Col. Americana, Guadalajara, Jalisco',
                 'phone' => '+52 33 9876 5432',
                 'email' => 'contacto@plomeriaramirez.mx',
@@ -48,7 +48,7 @@ class BusinessSeeder extends Seeder
             ],
             [
                 'name' => 'Veterinaria Patitas Felices',
-                'description' => "Consulta médica, vacunación, estética canina y felina. Tienda con alimento premium y accesorios. Pregunta por nuestro plan de salud preventiva.",
+                'description' => 'Consulta médica, vacunación, estética canina y felina. Tienda con alimento premium y accesorios. Pregunta por nuestro plan de salud preventiva.',
                 'address' => 'Av. Vallarta 1500, Col. Vallarta Norte, Guadalajara, Jalisco',
                 'phone' => '+52 33 5555 0000',
                 'email' => 'citas@patitasfelices.mx',

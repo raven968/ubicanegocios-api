@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\Business;
+use App\Enums\Plan;
+use App\Enums\VideoOrientation;
+use App\Enums\WhatsappPhone;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -28,7 +30,7 @@ class BusinessRequest extends FormRequest
             'address' => ['nullable', 'string', 'max:255'],
             'phone' => ['nullable', 'string', 'max:40'],
             'phone2' => ['nullable', 'string', 'max:40'],
-            'whatsapp_phone' => ['nullable', 'in:phone,phone2'],
+            'whatsapp_phone' => ['nullable', Rule::enum(WhatsappPhone::class)],
             'email' => ['nullable', 'email', 'max:120'],
             'facebook' => ['nullable', 'url', 'max:255'],
             'instagram' => ['nullable', 'url', 'max:255'],
@@ -37,14 +39,16 @@ class BusinessRequest extends FormRequest
             'website' => ['nullable', 'url', 'max:255'],
             'videos' => ['nullable', 'array'],
             'videos.*.url' => ['required', 'url', 'max:255'],
-            'videos.*.orientation' => ['nullable', 'in:horizontal,vertical'],
+            'videos.*.orientation' => ['nullable', Rule::enum(VideoOrientation::class)],
             'tags' => ['nullable', 'array'],
             'tags.*' => ['string', 'max:50'],
             'active' => ['boolean'],
-            'plan' => ['nullable', 'in:'.implode(',', Business::PLANS)],
+            'plan' => ['nullable', Rule::enum(Plan::class)],
             'joined_at' => ['nullable', 'date'],
             'contact_name' => ['nullable', 'string', 'max:150'],
             'payment_day' => ['nullable', 'integer', 'between:1,31'],
+            'payment_exempt' => ['boolean'],
+            'billing_notes' => ['nullable', 'string', 'max:2000'],
             'category_ids' => ['nullable', 'array'],
             'category_ids.*' => ['integer', 'exists:categories,id'],
             'subcategory_ids' => ['nullable', 'array'],

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Business;
 use App\Services\CashService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Carbon;
@@ -30,6 +31,16 @@ class CashReportController extends Controller
             'overdue_count' => $charges->where('days_overdue', '>', 0)->count(),
             'data' => $charges,
         ]);
+    }
+
+    /**
+     * Saca al negocio de la hoja de cobro: se dio de baja y ya no se le cobra.
+     */
+    public function dismiss(Business $business)
+    {
+        $this->cash->dismissCharge($business);
+
+        return response()->noContent();
     }
 
     /**

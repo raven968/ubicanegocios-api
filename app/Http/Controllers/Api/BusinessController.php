@@ -18,6 +18,7 @@ class BusinessController extends Controller
     {
         $businesses = Business::query()
             ->where('active', true)
+            ->withReviewStats()
             ->with(['images', 'categories', 'zones'])
             ->when($request->filled('category'), function ($q) use ($request) {
                 $q->whereHas('categories', fn ($c) => $c->where('slug', $request->string('category')));
@@ -52,6 +53,7 @@ class BusinessController extends Controller
         $business = Business::query()
             ->where('slug', $slug)
             ->where('active', true)
+            ->withReviewStats()
             ->with(['images', 'videos', 'categories', 'subcategories', 'zones', 'reviews'])
             ->firstOrFail();
 

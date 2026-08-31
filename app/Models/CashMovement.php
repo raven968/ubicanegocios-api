@@ -2,32 +2,22 @@
 
 namespace App\Models;
 
+use App\Enums\MovementSource;
+use App\Enums\MovementType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class CashMovement extends Model
 {
-    public const TYPE_INCOME = 'income';
-
-    public const TYPE_EXPENSE = 'expense';
-
-    /** Captura libre: monto, concepto y cantidad los escribe el usuario. */
-    public const SOURCE_MANUAL = 'manual';
-
-    /** Entrada ligada a la cuota de un negocio; arrastra próxima fecha de cobro. */
-    public const SOURCE_FEE = 'fee';
-
-    public const TYPES = [self::TYPE_INCOME, self::TYPE_EXPENSE];
-
-    public const SOURCES = [self::SOURCE_MANUAL, self::SOURCE_FEE];
-
     protected $fillable = [
         'type', 'source', 'business_id', 'user_id', 'concept',
         'quantity', 'amount', 'total', 'occurred_at', 'next_charge_date', 'notes',
     ];
 
     protected $casts = [
+        'type' => MovementType::class,
+        'source' => MovementSource::class,
         'quantity' => 'integer',
         'amount' => 'decimal:2',
         'total' => 'decimal:2',
@@ -58,12 +48,12 @@ class CashMovement extends Model
 
     public function scopeIncome(Builder $query): Builder
     {
-        return $query->where('type', self::TYPE_INCOME);
+        return $query->where('type', MovementType::Income);
     }
 
     public function scopeExpense(Builder $query): Builder
     {
-        return $query->where('type', self::TYPE_EXPENSE);
+        return $query->where('type', MovementType::Expense);
     }
 
     /**
@@ -74,12 +64,12 @@ class CashMovement extends Model
     public function scopeLatestFeePerBusiness(Builder $query): Builder
     {
         return $query
-            ->where('source', self::SOURCE_FEE)
+            ->where('source', MovementSource::Fee)
             ->whereNotNull('business_id')
             ->whereIn('id', function ($sub) {
                 $sub->selectRaw('max(id)')
                     ->from('cash_movements')
-                    ->where('source', self::SOURCE_FEE)
+                    ->where('source', MovementSource::Fee)
                     ->whereNotNull('business_id')
                     ->groupBy('business_id');
             });

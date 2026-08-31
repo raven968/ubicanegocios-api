@@ -2,7 +2,8 @@
 
 namespace App\Http\Requests\Admin;
 
-use App\Models\CashMovement;
+use App\Enums\MovementSource;
+use App\Enums\MovementType;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
@@ -14,17 +15,22 @@ class CashMovementRequest extends FormRequest
     }
 
     /**
-     * Las salidas siempre son captura libre, así que el origen y el negocio se
-     * normalizan aquí en lugar de confiar en lo que mande el front.
+     * Normaliza aquí en vez de confiar en lo que mande el front: las salidas
+     * siempre son captura libre y sin cliente, y solo las cuotas arrastran
+     * próxima fecha de cobro.
      */
     protected function prepareForValidation(): void
     {
-        $isFee = $this->input('type') === CashMovement::TYPE_INCOME
-            && $this->input('source') === CashMovement::SOURCE_FEE;
+        $isIncome = $this->input('type') === MovementType::Income->value;
+        $isFee = $isIncome && $this->input('source') === MovementSource::Fee->value;
 
         $this->merge([
-            'source' => $isFee ? CashMovement::SOURCE_FEE : CashMovement::SOURCE_MANUAL,
-            'business_id' => $isFee ? $this->input('business_id') : null,
+            'source' => $isFee ? MovementSource::Fee->value : MovementSource::Manual->value,
+            // Una entrada manual sí puede ir ligada a un cliente (un abono, un
+            // extra); la salida no, porque a quien se le paga no es un negocio
+            // del directorio.
+            'business_id' => $isIncome ? $this->input('business_id') : null,
+            // La próxima fecha de cobro solo tiene sentido en una cuota.
             'next_charge_date' => $isFee ? $this->input('next_charge_date') : null,
         ]);
     }
@@ -34,21 +40,19 @@ class CashMovementRequest extends FormRequest
      */
     public function rules(): array
     {
-        $isFee = $this->input('source') === CashMovement::SOURCE_FEE;
+        $isFee = $this->input('source') === MovementSource::Fee->value;
 
         return [
-            'type' => ['required', Rule::in(CashMovement::TYPES)],
-            'source' => ['required', Rule::in(CashMovement::SOURCES)],
+            'type' => ['required', Rule::enum(MovementType::class)],
+            'source' => ['required', Rule::enum(MovementSource::class)],
             'business_id' => [$isFee ? 'required' : 'nullable', 'exists:businesses,id'],
             'concept' => ['required', 'string', 'max:255'],
             'quantity' => ['required', 'integer', 'min:1', 'max:100000'],
             'amount' => ['required', 'numeric', 'min:0', 'max:99999999'],
             'occurred_at' => ['required', 'date'],
-            'next_charge_date' => [
-                $isFee ? 'required' : 'nullable',
-                'date',
-                'after_or_equal:occurred_at',
-            ],
+            // Opcional incluso en las cuotas: dejarla vacía es como se saca al
+            // cliente de la hoja de cobro cuando ya no quiere seguir pagando.
+            'next_charge_date' => ['nullable', 'date', 'after_or_equal:occurred_at'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ];
     }
@@ -65,7 +69,6 @@ class CashMovementRequest extends FormRequest
             'quantity.required' => 'Indica la cantidad.',
             'amount.required' => 'Indica el monto.',
             'occurred_at.required' => 'Indica la fecha del movimiento.',
-            'next_charge_date.required' => 'Indica la próxima fecha de cobro.',
             'next_charge_date.after_or_equal' => 'La próxima fecha de cobro no puede ser anterior a la fecha del movimiento.',
         ];
     }

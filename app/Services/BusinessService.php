@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\VideoOrientation;
+use App\Enums\WhatsappPhone;
 use App\Models\Business;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
@@ -18,6 +20,7 @@ class BusinessService
     public function query(array $filters): Builder
     {
         return Business::query()
+            ->withReviewStats()
             ->with(['images', 'categories', 'zones'])
             ->when(! empty($filters['search']), function ($q) use ($filters) {
                 $term = '%'.$filters['search'].'%';
@@ -61,6 +64,8 @@ class BusinessService
             'joined_at' => $data['joined_at'] ?? null,
             'contact_name' => $data['contact_name'] ?? null,
             'payment_day' => $data['payment_day'] ?? null,
+            'payment_exempt' => $data['payment_exempt'] ?? false,
+            'billing_notes' => $data['billing_notes'] ?? null,
         ]);
 
         $this->syncRelations($business, $data);
@@ -95,6 +100,8 @@ class BusinessService
             'joined_at' => $data['joined_at'] ?? null,
             'contact_name' => $data['contact_name'] ?? null,
             'payment_day' => $data['payment_day'] ?? null,
+            'payment_exempt' => $data['payment_exempt'] ?? false,
+            'billing_notes' => $data['billing_notes'] ?? null,
         ]);
 
         $this->syncRelations($business, $data);
@@ -111,13 +118,13 @@ class BusinessService
     public function exportRows(array $filters): Collection
     {
         return $this->query($filters)
-            ->with(['subcategories', 'reviews'])
+            ->with(['subcategories'])
             ->get()
             ->map(fn (Business $b) => [
                 (string) $b->folio,
                 $b->name,
                 $b->active ? 'Activo' : 'Inactivo',
-                (string) $b->plan,
+                $b->plan?->label() ?? '',
                 $b->categories->pluck('name')->implode(', '),
                 $b->subcategories->pluck('name')->implode(', '),
                 $b->zones->pluck('name')->implode(', '),
@@ -129,8 +136,8 @@ class BusinessService
                 $b->joined_at?->toDateString() ?? '',
                 (string) $b->contact_name,
                 (string) $b->payment_day,
-                (string) $b->reviews->count(),
-                $b->reviews->isNotEmpty() ? (string) round($b->reviews->avg('rating'), 1) : '',
+                (string) $b->reviews_count,
+                $b->reviews_count > 0 ? (string) $b->average_rating : '',
                 $b->created_at?->toDateString() ?? '',
             ]);
     }
@@ -152,11 +159,7 @@ class BusinessService
      */
     private function whatsappNumber(Business $business): string
     {
-        return match ($business->whatsapp_phone) {
-            'phone' => (string) $business->phone,
-            'phone2' => (string) $business->phone2,
-            default => '',
-        };
+        return $business->whatsapp_phone?->numberOf($business) ?? '';
     }
 
     /**
@@ -165,11 +168,11 @@ class BusinessService
      *
      * @param  array<string, mixed>  $data
      */
-    private function resolveWhatsappPhone(array $data): ?string
+    private function resolveWhatsappPhone(array $data): ?WhatsappPhone
     {
-        $marked = $data['whatsapp_phone'] ?? null;
+        $marked = WhatsappPhone::tryFrom((string) ($data['whatsapp_phone'] ?? ''));
 
-        if ($marked && ! empty($data[$marked] ?? null)) {
+        if ($marked && ! empty($data[$marked->value] ?? null)) {
             return $marked;
         }
 
@@ -195,7 +198,7 @@ class BusinessService
             foreach (array_values($data['videos'] ?? []) as $order => $video) {
                 $business->videos()->create([
                     'url' => $video['url'],
-                    'orientation' => $video['orientation'] ?? 'horizontal',
+                    'orientation' => $video['orientation'] ?? VideoOrientation::Horizontal,
                     'order' => $order,
                 ]);
             }

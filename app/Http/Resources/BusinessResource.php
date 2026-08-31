@@ -34,6 +34,8 @@ class BusinessResource extends JsonResource
                 'joined_at' => $this->joined_at?->toDateString(),
                 'contact_name' => $this->contact_name,
                 'payment_day' => $this->payment_day,
+                'payment_exempt' => $this->payment_exempt,
+                'billing_notes' => $this->billing_notes,
             ]),
             'average_rating' => $this->average_rating,
             'reviews_count' => $this->reviews_count,

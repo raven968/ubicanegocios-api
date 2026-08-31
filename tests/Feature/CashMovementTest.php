@@ -52,7 +52,7 @@ class CashMovementTest extends TestCase
             ->assertJsonPath('data.type', 'expense');
     }
 
-    public function test_la_entrada_por_cuota_exige_cliente_y_proxima_fecha(): void
+    public function test_la_entrada_por_cuota_exige_cliente_pero_no_proxima_fecha(): void
     {
         $this->actingAsAdmin();
 
@@ -64,7 +64,8 @@ class CashMovementTest extends TestCase
             'amount' => 500,
             'occurred_at' => '2026-08-23',
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['business_id', 'next_charge_date']);
+            ->assertJsonValidationErrors('business_id')
+            ->assertJsonMissingValidationErrors('next_charge_date');
     }
 
     public function test_las_salidas_ignoran_cliente_y_proxima_fecha(): void

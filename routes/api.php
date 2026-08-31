@@ -54,6 +54,7 @@ Route::prefix('v1')->group(function () {
 
         Route::middleware('can:manage-cash')->prefix('cash')->group(function () {
             Route::get('due', [CashReportController::class, 'due']);
+            Route::delete('due/{business}', [CashReportController::class, 'dismiss']);
             Route::get('summary', [CashReportController::class, 'summary']);
             Route::get('export', [CashReportController::class, 'export']);
             Route::apiResource('movements', CashMovementController::class)->except(['show']);

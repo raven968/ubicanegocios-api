@@ -40,6 +40,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware('can:manage-businesses')->group(function () {
             // Antes del apiResource: si no, businesses/{business} se comería 'export'.
             Route::get('businesses/export', [AdminBusinessController::class, 'export']);
+            Route::get('businesses/stats', [AdminBusinessController::class, 'stats']);
             Route::apiResource('businesses', AdminBusinessController::class);
             Route::post('businesses/{business}/images', [BusinessImageController::class, 'store']);
             Route::put('businesses/{business}/images/reorder', [BusinessImageController::class, 'reorder']);

@@ -110,6 +110,25 @@ class BusinessService
     }
 
     /**
+     * Conteos del catálogo para el dashboard. Se resuelven en SQL a propósito:
+     * contarlos sobre el listado daría solo los de la página traída.
+     *
+     * @return array{total: int, active: int, inactive: int}
+     */
+    public function stats(): array
+    {
+        $total = Business::count();
+        $active = Business::where('active', true)->count();
+
+        // active es NOT NULL, así que la resta no puede dejar negocios fuera.
+        return [
+            'total' => $total,
+            'active' => $active,
+            'inactive' => $total - $active,
+        ];
+    }
+
+    /**
      * Filas planas listas para el CSV del listado.
      *
      * @param  array<string, mixed>  $filters

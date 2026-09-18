@@ -27,6 +27,14 @@ class BusinessController extends Controller
     }
 
     /**
+     * Conteos del catálogo para el dashboard.
+     */
+    public function stats()
+    {
+        return response()->json($this->businesses->stats());
+    }
+
+    /**
      * Descarga del listado filtrado en CSV (abre directo en Excel).
      */
     public function export(Request $request)

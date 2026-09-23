@@ -13,10 +13,11 @@ class BusinessController extends Controller
      * Public listing of active businesses with optional filters:
      * ?category=slug  ?subcategory=slug  ?zone=slug  ?search=term
      * ?sort=plan ordena por plan (fundador → lite) antes que por fecha.
+     * ?all=1 regresa todos los resultados sin paginar.
      */
     public function index(Request $request)
     {
-        $businesses = Business::query()
+        $query = Business::query()
             ->where('active', true)
             ->withReviewStats()
             ->with(['images', 'categories', 'zones'])
@@ -38,9 +39,11 @@ class BusinessController extends Controller
                 });
             })
             ->when($request->query('sort') === 'plan', fn ($q) => $q->orderByPlan())
-            ->latest()
-            ->paginate(12)
-            ->withQueryString();
+            ->latest();
+
+        $businesses = $request->boolean('all')
+            ? $query->get()
+            : $query->paginate(12)->withQueryString();
 
         return BusinessResource::collection($businesses);
     }

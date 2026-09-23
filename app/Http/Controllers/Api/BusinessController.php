@@ -12,7 +12,8 @@ class BusinessController extends Controller
     /**
      * Public listing of active businesses with optional filters:
      * ?category=slug  ?subcategory=slug  ?zone=slug  ?search=term
-     * ?sort=plan ordena por plan (fundador → lite) antes que por fecha.
+     * ?sort=plan ordena por plan (fundador → ubitag) y luego del más antiguo al más nuevo;
+     * sin sort, del más nuevo al más antiguo. En ambos casos el desempate es por id.
      * ?all=1 regresa todos los resultados sin paginar.
      */
     public function index(Request $request)
@@ -38,8 +39,14 @@ class BusinessController extends Controller
                         ->orWhereRaw('tags::text ilike ?', [$term]);
                 });
             })
-            ->when($request->query('sort') === 'plan', fn ($q) => $q->orderByPlan())
-            ->latest();
+            ->when(
+                $request->query('sort') === 'plan',
+                // Dentro de cada plan, el que llegó primero conserva su lugar.
+                fn ($q) => $q->orderByPlan()->oldest(),
+                fn ($q) => $q->latest(),
+            )
+            // Desempate estable: a igual fecha, el que se creó primero va antes.
+            ->orderBy('id');
 
         $businesses = $request->boolean('all')
             ? $query->get()

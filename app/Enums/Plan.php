@@ -6,7 +6,7 @@ use App\Enums\Concerns\HasValues;
 
 /**
  * Planes contratables. El orden de los casos es la jerarquía comercial
- * (fundador arriba, lite abajo) y es lo que usa Business::scopeOrderByPlan.
+ * (fundador arriba, ubitag abajo) y es lo que usa Business::scopeOrderByPlan.
  */
 enum Plan: string
 {
@@ -24,9 +24,14 @@ enum Plan: string
 
     case Lite = 'lite';
 
+    case UbiTag = 'ubitag';
+
     public function label(): string
     {
-        return ucfirst($this->value);
+        return match ($this) {
+            self::UbiTag => 'UbiTag',
+            default => ucfirst($this->value),
+        };
     }
 
     /**

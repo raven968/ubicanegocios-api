@@ -121,15 +121,36 @@ class EnumContractTest extends TestCase
 
     public function test_el_orden_por_plan_respeta_la_jerarquia(): void
     {
+        $this->business(['name' => 'D', 'slug' => 'd', 'plan' => 'ubitag']);
         $this->business(['name' => 'C', 'slug' => 'c', 'plan' => 'lite']);
         $this->business(['name' => 'A', 'slug' => 'a', 'plan' => 'fundador']);
         $this->business(['name' => 'B', 'slug' => 'b', 'plan' => 'pro']);
-        $this->business(['name' => 'D', 'slug' => 'd']);
+        $this->business(['name' => 'E', 'slug' => 'e']);
 
         $this->assertSame(
-            ['A', 'B', 'C', 'D'],
+            ['A', 'B', 'C', 'D', 'E'],
             Business::query()->orderByPlan()->pluck('name')->all(),
         );
+    }
+
+    public function test_el_listado_por_plan_va_del_mas_antiguo_al_mas_nuevo(): void
+    {
+        $at = fn (string $date) => ['created_at' => $date, 'updated_at' => $date];
+
+        // Mismo plan y misma fecha: decide el id (B se crea antes que C).
+        $this->business(['name' => 'B', 'slug' => 'b', 'plan' => 'pro'])->forceFill($at('2026-03-01'))->save();
+        $this->business(['name' => 'C', 'slug' => 'c', 'plan' => 'pro'])->forceFill($at('2026-03-01'))->save();
+        $this->business(['name' => 'A', 'slug' => 'a', 'plan' => 'pro'])->forceFill($at('2026-01-01'))->save();
+        $this->business(['name' => 'D', 'slug' => 'd', 'plan' => 'lite'])->forceFill($at('2025-01-01'))->save();
+
+        $this->getJson('/api/v1/businesses?sort=plan&all=1')
+            ->assertOk()
+            ->assertJsonPath('data.*.name', ['A', 'B', 'C', 'D']);
+
+        // Sin sort (los recientes del inicio) va del más nuevo al más antiguo.
+        $this->getJson('/api/v1/businesses')
+            ->assertOk()
+            ->assertJsonPath('data.*.name', ['B', 'C', 'A', 'D']);
     }
 
     public function test_un_plan_inventado_no_pasa_la_validacion(): void
